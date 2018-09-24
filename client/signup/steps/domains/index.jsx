@@ -7,6 +7,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { defer, endsWith, get, isEmpty } from 'lodash';
 import { localize, getLocaleSlug } from 'i18n-calypso';
+import sha1 from 'hash.js/lib/hash/sha/1';
 import ReactCSSTransitionGroup from 'react-transition-group/CSSTransitionGroup';
 
 /**
@@ -63,6 +64,42 @@ class DomainsStep extends React.Component {
 
 	constructor( props ) {
 		super( props );
+
+		const { flowName, signupDependencies } = props;
+
+		if ( flowName === 'from-site' && signupDependencies.importUrl ) {
+			this.skipRender = true;
+
+			const baseDomain = signupDependencies.importUrl
+				.replace( /^https?:\/\//, '' )
+				.replace( /[^a-z0-9-]+/gi, '' )
+				.toLowerCase();
+
+			const hash = sha1();
+			hash.update( baseDomain + Math.floor( Math.random() * ( 10000000 - 100000 ) + 100000 ) );
+
+			const domain =
+				( baseDomain.substring( 0, 52 ) + hash.digest( 'hex' ) ).substring( 0, 60 ) +
+				'.wordpress.com';
+
+			// @TODO fix it!
+			//				const productSlug = getDomainProductSlug( domain );
+			//				const domainItem = cartItems.domainRegistration( { productSlug, domain } );
+
+			SignupActions.submitSignupStep(
+				Object.assign( {
+					processingMessage: props.translate( 'Reticulating splines' ),
+					//stepName: props.stepName,
+					//					domainItem,
+					siteUrl: domain,
+					//isPurchasingItem: true,
+					//stepSectionName: props.stepSectionName,
+				} ) //,
+				//[],
+				//{ domainItem }
+			);
+			props.goToNextStep();
+		}
 
 		this.skipRender = false;
 
